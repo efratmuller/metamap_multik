@@ -1,11 +1,17 @@
 # Required arguments
 
 input:
-    "/rds/project/rds-aFEMMKDjWlo/rarora/mapping/fastq_paths.txt" # two-column file pointing to _1.fastq.gz and _2.fastq.gz files
+    "/rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/ERP110064_fastqs_test.tsv" # two-column tsv file pointing to _1.fastq.gz and _2.fastq.gz files
 
 output: 
-    "/rds/project/rds-aFEMMKDjWlo/rarora/mapping/results/uhgv-custom" # output directory to store results
+    "/rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/ERP110064" # output directory to store results
 
-database: 
-    bwa_db: "/rds/project/rds-aFEMMKDjWlo/rarora/mapping/databases/uhgv-custom/uhgv-custom.fa" # combined fasta file indexed with BWA
+database_a: 
+    db_name: 'uhgg'
+    bwa_db: "/rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgg_v1.1/uhgg_v1.1.fa" # combined fasta file indexed with BWA
+    type: "contigs" # contigs or complete
+
+database_b: 
+    db_name: 'uhgv'
+    bwa_db: "/rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgv_nayfach/votus_mq_plus_filtered.fna" # combined fasta file indexed with BWA
     type: "complete" # contigs or complete
