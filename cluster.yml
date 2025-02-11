@@ -1,21 +1,23 @@
 __default__:
-    queue: "cclake"
+    queue: "icelake"
     project: "ALMEIDA-SL2-CPU"
-    mem: 40000
-    time: "12:00:00"
-    nCPU: 8
+    mem: "8GB"
+    time: "2:00:00"
+    nCPU: 2
     name: "{rule}"
-    output: "{OUTPUT_DIR}/mapping/{wildcards.sample}/logs/{rule}.log"
+    output: "{OUTPUT_DIR}/summary/logs/{rule}.log"
 
 map2ref:
-    mem : 50000
+    mem : "64GB"
+    time: "8:00:00"
     nCPU: 16
+    output: "{OUTPUT_DIR}/mapping/{wildcards.sample}/logs/{rule}_{wildcards.ref_db}.log"
+
+get_mapping_overlaps:
+    output: "{OUTPUT_DIR}/mapping/{wildcards.sample}/logs/{rule}.log"
 
 parse_cov:
-    output: "{OUTPUT_DIR}/summary/logs/{rule}.log"
+    output: "{OUTPUT_DIR}/summary/logs/{rule}_{wildcards.ref_db}.log"
 
-parse_expcov:
-    output: "{OUTPUT_DIR}/summary/logs/{rule}.log"
-
-parse_counts:
-    output: "{OUTPUT_DIR}/summary/logs/{rule}.log"
+parse_read_counts:
+    output: "{OUTPUT_DIR}/summary/logs/{rule}_{wildcards.ref_db}_{wildcards.type}.log"

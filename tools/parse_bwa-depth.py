@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
+# This script is executed by map2ref.sh to summarize statistics about per-genome coverage depth, breadth, etc.
+
 import os
 import sys
 import math
 import numpy
 
 if len(sys.argv) < 3:
-    print("usage: script.py bwa_depth.tab bwa_depth-pos.tab mode[contigs/complete] suffix")
+    print("usage: script.py bwa_depth.tab bwa_depth-pos.tab mode[contigs/complete] sample_name")
     sys.exit()
 
-name = os.path.basename(sys.argv[1]).split(sys.argv[4])[0]
+name = sys.argv[4]
 spec_stats = {}
 
 # recover genome length and total counts per species (for average depth)
@@ -41,7 +43,7 @@ with open(sys.argv[2], "r") as f:
             depth = int(cols[2]) # depth of covered position
             spec_stats[species][2].append(depth)
 
-print(f"Genome\t{name}_Length\t{name}_Counts\t{name}_MeanDepth\t{name}_Coverage\t{name}_ExpCoverage\t{name}_CoeffVar")
+print(f"Genome\t{name}_Length\t{name}_Counts\t{name}_MeanDepth\t{name}_Coverage\t{name}_ExpCoverage\t{name}_CoeffVar\t{name}_ObsExpRatio")
 
 # combine stats and print per species
 for species in spec_stats.keys():
@@ -55,11 +57,13 @@ for species in spec_stats.keys():
     else:
         covSd = numpy.std(covPos)
     meanDepth = float(sum(covPos))/max(length,1)
-    if float(meanDepth) > 0:
+    if meanDepth > 0:
         expCov = (1.00 - numpy.exp(-0.883*meanDepth))*100
         meanDepth_covered = float(sum(covPos))/max(len(covPos),1)
         cV = covSd/meanDepth_covered
+        obsExpRatio = coverage/expCov
     else:
         expCov = 0
         cV = 0
-    print(f"{species}\t{length}\t{counts}\t{meanDepth:.2f}\t{coverage:.2f}\t{expCov:.2f}\t{cV:.2f}")
+        obsExpRatio = 0
+    print(f"{species}\t{length}\t{counts}\t{meanDepth:.2f}\t{coverage:.2f}\t{expCov:.2f}\t{cV:.2f}\t{obsExpRatio:.2f}")

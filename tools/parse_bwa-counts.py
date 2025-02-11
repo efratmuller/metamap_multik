@@ -5,10 +5,10 @@ import sys
 import os
 import argparse
 
-def getCounts(folder, ftype):
+def getCounts(folder, ftype, db_name):
     counts = []
     file_count = 0
-    for f in glob.glob(os.path.join(folder, "*/*"+ftype+".tab")):
+    for f in glob.glob(os.path.join(folder, f"*/*_{db_name}_{ftype}.tab")):
         file_count += 1
         print("%i\t%s" % (file_count, f))
         with open(f, "r") as bwa_data:
@@ -30,13 +30,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parse BWA results to extract counts')
     parser.add_argument('-i', dest='in_folder', help='Input folder (files should be in subdirectories)', required=True)
     parser.add_argument('-f', dest='ftype', help='\'unique\' or \'total\' counts', required=True)
+    parser.add_argument('-d', dest='db_name', help='Name of DB of reference genomes', required=True)
     parser.add_argument('-o', dest='out_file', help='Output CSV file', required=True)
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
     else:
         args = parser.parse_args()
-        counts = getCounts(args.in_folder, args.ftype)
+        counts = getCounts(args.in_folder, args.ftype, args.db_name)
         with open(args.out_file, "w") as f_out:
             for data in counts:
                 f_out.write(",".join(data)+"\n")

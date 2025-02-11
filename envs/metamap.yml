@@ -6,3 +6,4 @@ dependencies:
   - bwa
   - samtools=1.9
   - pysam
+  - pandas
