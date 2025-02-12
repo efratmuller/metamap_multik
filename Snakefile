@@ -44,6 +44,7 @@ rule all:
         expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_counts_unique_filtered.csv", ref_db=REF_DBS),
         expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_cov_est.csv", ref_db=REF_DBS),
         expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_cov_exp.csv", ref_db=REF_DBS),
+        expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_multi_mapped_reads.txt", sample=samp2path.keys()),
         OUTPUT_DIR+"/summary/bwa_mapping_stats.tab"
 
 # map metagenomes to catalog B (performed once per run acceesion)
@@ -74,11 +75,10 @@ rule get_mapping_overlaps:
     input:
         lambda wildcards: expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_aligned_reads_uniq.txt.gz", sample=wildcards.sample, ref_db=REF_DBS)
     output:
-        OUTPUT_DIR+"/mapping/{sample}/{sample}_multi_mapped_reads.tab",
+        OUTPUT_DIR+"/mapping/{sample}/{sample}_multi_mapped_reads.txt"
     shell:
         """
-        echo -n -e "READS\treads_mapped_to_both_databases\t" > {output}
-        zcat {input[0]} {input[1]} | sort | uniq -d | wc -l >> {output}
+        zcat {input[0]} {input[1]} | sort | uniq -d > {output}
         """
 
 # compute breadth of coverage and expected coverage per genome from each catalog
@@ -116,7 +116,7 @@ rule parse_read_counts:
 # collect statistics per sample into a single table
 rule collect_stats:
     input:
-        expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_multi_mapped_reads.tab", sample=samp2path.keys()),
+        expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_multi_mapped_reads.txt", sample=samp2path.keys()),
         expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_stats.tab", sample=samp2path.keys(), ref_db=REF_DBS)
     output:
         OUTPUT_DIR+"/summary/bwa_mapping_stats.tab"
