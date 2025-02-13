@@ -3,13 +3,13 @@
 # Commands for testing:
 # lab-dir; cd emuller/phages_project/scripts/metamap_multik
 # conda activate metamap_test
-# ./tools/map2ref.sh -t 8 -e 0.85 -i /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/SRP114847/SRR5898933/SRR5898933_1.fastq.gz -n /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/SRP114847/SRR5898933/SRR5898933_2.fastq.gz -r /rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgv_nayfach/votus_mq_plus.fna -o "/home/em2035/rds/hpc-work/mapping_tests/SRR5898933/SRR5898933_uhgv" -c "complete"
-# ./tools/map2ref.sh -t 8 -e 0.3 -i /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/SRP114847/SRR5898933/SRR5898933_1.fastq.gz -n /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/SRP114847/SRR5898933/SRR5898933_2.fastq.gz -r /rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgg_v1.1/uhgg_v1.1.fa -o "/home/em2035/rds/hpc-work/mapping_tests/SRR5898933/SRR5898933_uhgg" -c "contigs"
+# ./tools/map2ref.sh -t 8 -e 0.85 -i /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/SRP114847/SRR5898933/SRR5898933_1.fastq.gz -n /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/SRP114847/SRR5898933/SRR5898933_2.fastq.gz -r /rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgv_nayfach/votus_mq_plus.fna -o "/home/em2035/rds/hpc-work/mapping_tests/output_test/mapping/SRR5898933/SRR5898933_uhgv" -c "complete"
+# ./tools/map2ref.sh -t 8 -e 0.3 -i /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/SRP114847/SRR5898933/SRR5898933_1.fastq.gz -n /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/SRP114847/SRR5898933/SRR5898933_2.fastq.gz -r /rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgg_v1.1/uhgg_v1.1.fa -o "/home/em2035/rds/hpc-work/mapping_tests/output_test/mapping/SRR5898933/SRR5898933_uhgg" -c "contigs"
 # conda deactivate
 
 # with slurm:
-# sbatch -A ALMEIDA-SL2-CPU -J "m2r_v" -o /home/em2035/rds/hpc-work/mapping_tests/SRR5898933/map2ref_v.out -e /home/em2035/rds/hpc-work/mapping_tests/SRR5898933/map2ref_v.err -p icelake --mem=16G --ntasks=1 --cpus-per-task=16 --time=1:00:00 --wrap="./tools/map2ref.sh -t 16 -e 0.85 -i /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/SRP114847/SRR5898933/SRR5898933_1.fastq.gz -n /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/SRP114847/SRR5898933/SRR5898933_2.fastq.gz -r /rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgv_nayfach/votus_mq_plus.fna -o /home/em2035/rds/hpc-work/mapping_tests/SRR5898933/SRR5898933_uhgv -c complete"
-# sbatch -A ALMEIDA-SL2-CPU -J "m2r_b" -o /home/em2035/rds/hpc-work/mapping_tests/ERR7746111/map2ref_b.out -e /home/em2035/rds/hpc-work/mapping_tests/ERR7746111/map2ref_b.err -p icelake --mem=64G --ntasks=1 --cpus-per-task=16 --time=12:00:00 --wrap="./tools/map2ref.sh -t 16 -e 0.3 -i /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/ERP133688/ERR7746111/ERR7746111_1.fastq.gz -n /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/ERP133688/ERR7746111/ERR7746111_2.fastq.gz -r /rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgg_v1.1/uhgg_v1.1.fa -o /home/em2035/rds/hpc-work/mapping_tests/ERR7746111/ERR7746111_uhgg -c contigs"
+# sbatch -A ALMEIDA-SL2-CPU -J "m2r_v" -o /home/em2035/rds/hpc-work/mapping_tests/output_test/mapping/SRR7658677/map2ref_v.out -e /home/em2035/rds/hpc-work/mapping_tests/output_test/mapping/SRR7658677/map2ref_v.err -p icelake --mem=16G --ntasks=1 --cpus-per-task=16 --time=1:00:00 --wrap="./tools/map2ref.sh -t 16 -e 0.85 -i /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/SRP156699/SRR7658677/SRR7658677_1.fastq.gz -n /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/SRP156699/SRR7658677/SRR7658677_2.fastq.gz -r /rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgv_nayfach/votus_mq_plus.fna -o /home/em2035/rds/hpc-work/mapping_tests/output_test/mapping/SRR7658677/SRR7658677_uhgv -c complete"
+# sbatch -A ALMEIDA-SL2-CPU -J "m2r_b" -o /home/em2035/rds/hpc-work/mapping_tests/output_test/mapping/ERR7746111/map2ref_b.out -e /home/em2035/rds/hpc-work/mapping_tests/output_test/mapping/ERR7746111/map2ref_b.err -p icelake --mem=64G --ntasks=1 --cpus-per-task=16 --time=12:00:00 --wrap="./tools/map2ref.sh -t 16 -e 0.3 -i /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/ERP133688/ERR7746111/ERR7746111_1.fastq.gz -n /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/ERP133688/ERR7746111/ERR7746111_2.fastq.gz -r /rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgg_v1.1/uhgg_v1.1.fa -o /home/em2035/rds/hpc-work/mapping_tests/output_test/mapping/ERR7746111/ERR7746111_uhgg -c contigs"
 
 
 usage()
@@ -186,6 +186,15 @@ echo "$(timestamp) [ map2ref pipeline ] Inferring presence/absence of species ..
 awk -F'\t' -v min_br=${min_br} -v min_ratio=${min_ratio} '$3 > 0 && $5 > min_br && $8 > min_ratio { print $1 }' ${outprefix}_total.tab > ${outprefix}_present_genomes.txt
 count=`wc -l < ${outprefix}_present_genomes.txt`
 echo -e "GENOMES\t4_genomes_present_after_breadth_filters\t${count}" >> ${outprefix}_stats.tab
+if [ ${count} -eq 0 ]
+then
+    echo "$(timestamp) [ map2ref pipeline ] No genomes inferred as present in this sample, using the provided thresholds."
+    echo "" > ${outprefix}_aligned_reads_uniq.txt
+    gzip -f ${outprefix}_aligned_reads_uniq.txt
+    echo -e "READS\t6_mapped_reads_uniques_proper_pairs_genomes_present\t0" >> ${outprefix}_stats.tab
+    echo "" > ${outprefix}_unique_filtered.tab
+    exit 0
+fi
 
 # (8) Save a list of aligned reads (uniquely mapped, after filtering genomes inferred as present in the sample)
 # This list will be used to calculate the number of reads that were mapped to multiple reference catalogs.

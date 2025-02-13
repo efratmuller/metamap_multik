@@ -11,10 +11,10 @@ databases:
     bwa_db: "/rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgg_v1.1/uhgg_v1.1.fa" # combined fasta file indexed with BWA
     type: "contigs" # contigs or complete
     breadth_threshold: 5
-    breadth_obs_exp_ratio: 30
+    breadth_obs_exp_ratio: 0.3
 
   uhgv:
     bwa_db: "/rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgv_nayfach/votus_mq_plus.fna" # combined fasta file indexed with BWA
     type: "complete" # contigs or complete
     breadth_threshold: 5
-    breadth_obs_exp_ratio: 85
+    breadth_obs_exp_ratio: 0.85

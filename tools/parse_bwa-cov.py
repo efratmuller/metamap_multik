@@ -19,7 +19,8 @@ def getCov(folder, db_name):
                 if file_count == 1:
                     covs.append([cols[0]])
                 if linen == 1:
-                    name = cols[4].replace("_Coverage", "")
+                    name = os.path.basename(cols[4])
+                    name = name.replace("_" + db_name + "_Coverage", "")
                     covs[linen-1].append(name)
                 else:
                     cov = float(cols[4])
