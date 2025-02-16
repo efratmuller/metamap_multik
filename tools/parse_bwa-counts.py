@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+er #!/usr/bin/env python
 
 # To test:
 # cd /rds/project/rds-aFEMMKDjWlo/emuller/phages_project/scripts/metamap_multik

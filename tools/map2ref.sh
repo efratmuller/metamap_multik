@@ -121,14 +121,16 @@ echo -e "READS\t1_total_qc_reads\t$((count * 2))" >> ${outprefix}_stats.tab
 # (1) Initial mapping agaist the reference database
 echo "$(timestamp) [ map2ref pipeline ] Running BWA ..."
 rm -f ${outprefix}*bam*
-bwa mem -M -t ${threads} ${ref} ${reads} ${reads2} | samtools view -@ ${threads_sam} -F 256 -uS - | samtools sort -@ ${threads_sam} - -o ${outprefix}_raw.bam
+bwa mem -M -t ${threads} ${ref} ${reads} ${reads2} \
+  | samtools view -@ ${threads_sam} -F 256 -uS - \
+  | samtools sort -@ ${threads_sam} - -o ${outprefix}_raw.bam
 samtools index -@ ${threads_sam} ${outprefix}_raw.bam
 
 # Record the total number of mapped reads
 count=`samtools view ${outprefix}_raw.bam | cut -f 1 | wc -l`
 if [ ${count} -eq 0 ]
 then
-    echo "$(timestamp) [ map2ref pipeline ] ERROR: bwa failed to map reads to reference genomes. Verify sufficient resources for bwa mem run."
+    echo "$(timestamp) [ map2ref pipeline ] ERROR: bwa failed. Verify sufficient resources for bwa mem run."
     exit 1
 fi
 echo -e "READS\t2_mapped_reads\t${count}" >> ${outprefix}_stats.tab
@@ -165,7 +167,8 @@ samtools idxstats ${outprefix}_ani_cov.bam > ${outprefix}_depth.tab
 samtools depth ${outprefix}_ani_cov.bam > ${outprefix}_depth-pos.tab
 
 echo "$(timestamp) [ map2ref pipeline ] Counting total reads per genome ..."
-tools/parse_bwa-depth.py ${outprefix}_depth.tab ${outprefix}_depth-pos.tab ${mode} ${outprefix} > ${outprefix}_total.tab
+tools/parse_bwa-depth.py ${outprefix}_depth.tab ${outprefix}_depth-pos.tab ${mode} ${outprefix} \
+  > ${outprefix}_total.tab
 
 # Record statistics
 count=`wc -l < ${outprefix}_total.tab`
@@ -177,61 +180,73 @@ echo -e "GENOMES\t2_genomes_with_mapped_reads\t${count}" >> ${outprefix}_stats.t
 echo "$(timestamp) [ map2ref pipeline ] Counting unique reads per genome ..."
 samtools idxstats ${outprefix}_unique_prop_pair.bam > ${outprefix}_unique_depth.tab
 samtools depth ${outprefix}_unique_prop_pair.bam > ${outprefix}_unique_depth-pos.tab
-tools/parse_bwa-depth.py ${outprefix}_unique_depth.tab ${outprefix}_unique_depth-pos.tab ${mode} ${outprefix} > ${outprefix}_unique.tab
+tools/parse_bwa-depth.py ${outprefix}_unique_depth.tab ${outprefix}_unique_depth-pos.tab ${mode} ${outprefix} \
+  > ${outprefix}_unique.tab
 count=`awk -F'\t' '$3 > 0' ${outprefix}_unique.tab | wc -l`
 echo -e "GENOMES\t3_genomes_with_uniquely_mapped_reads\t${count}" >> ${outprefix}_stats.tab
 
 # (7) Infer which genomes are present based on the observed breadth and observed/expected breadth ratio.
 echo "$(timestamp) [ map2ref pipeline ] Inferring presence/absence of species ..."
-awk -F'\t' -v min_br=${min_br} -v min_ratio=${min_ratio} '$3 > 0 && $5 > min_br && $8 > min_ratio { print $1 }' ${outprefix}_total.tab > ${outprefix}_present_genomes.txt
+awk -F'\t' -v min_br=${min_br} -v min_ratio=${min_ratio} \
+  '$3 > 0 && $5 > min_br && $8 > min_ratio { print $1 }' \
+  ${outprefix}_total.tab > ${outprefix}_present_genomes.txt
 count=`wc -l < ${outprefix}_present_genomes.txt`
 echo -e "GENOMES\t4_genomes_present_after_breadth_filters\t${count}" >> ${outprefix}_stats.tab
 if [ ${count} -eq 0 ]
 then
     echo "$(timestamp) [ map2ref pipeline ] No genomes inferred as present in this sample, using the provided thresholds."
+    echo -e "READS\t6_mapped_reads_uniques_proper_pairs_genomes_present\t0" >> ${outprefix}_stats.tab
+    # Create empty files to support downstream commands
     echo "" > ${outprefix}_aligned_reads_uniq.txt
     gzip -f ${outprefix}_aligned_reads_uniq.txt
-    echo -e "READS\t6_mapped_reads_uniques_proper_pairs_genomes_present\t0" >> ${outprefix}_stats.tab
-    echo "" > ${outprefix}_unique_filtered.tab
-    exit 0
-fi
+    head -n 1 ${outprefix}_unique.tab > ${outprefix}_unique_filtered.tab
+else
+    # (8) Save a list of aligned reads (uniquely mapped, after filtering genomes inferred as present in the sample)
+    # This list will be used to calculate the number of reads that were mapped to multiple reference catalogs.
+    echo "$(timestamp) [ map2ref pipeline ] Filtering read counts by inferred species presence ..."
 
-# (8) Save a list of aligned reads (uniquely mapped, after filtering genomes inferred as present in the sample)
-# This list will be used to calculate the number of reads that were mapped to multiple reference catalogs.
-echo "$(timestamp) [ map2ref pipeline ] Filtering read counts by inferred species presence ..."
+    # Create a temporary file with patterns for fast filtering with grep 
+    if [[ ${mode} == "complete" ]]; then
+        sed ':a;N;$!ba;s/\n/\t|/g' ${outprefix}_present_genomes.txt \
+          | head -c -1 > ${outprefix}_present_genomes_temp.txt
+        echo -e "\t" >> ${outprefix}_present_genomes_temp.txt
+    elif [[ ${mode} == "contigs" ]]; then
+        sed ':a;N;$!ba;s/\n/_|/g' ${outprefix}_present_genomes.txt | \
+          head -c -1 > ${outprefix}_present_genomes_temp.txt
+        echo "_" >> ${outprefix}_present_genomes_temp.txt
+    fi
 
-# Create a temporary file with patterns for fast filtering with grep 
-if [[ ${mode} == "complete" ]]; then
-    sed ':a;N;$!ba;s/\n/\t|/g' ${outprefix}_present_genomes.txt | head -c -1 > ${outprefix}_present_genomes_temp.txt
+    # Filter read alignments using the above patterns
+    samtools view ${outprefix}_unique_prop_pair.bam \
+      | grep -E -f ${outprefix}_present_genomes_temp.txt \
+      | cut -f 1 | sort | uniq \
+      > ${outprefix}_aligned_reads_uniq.txt
+
+    # Record statistics (note that each read pair is listed once here, so the line count is multiplied by 2)
+    count=`wc -l < ${outprefix}_aligned_reads_uniq.txt`
+    echo -e "READS\t6_mapped_reads_uniques_proper_pairs_genomes_present\t$((count * 2))" >> ${outprefix}_stats.tab
+
+    # Compress
+    gzip -f ${outprefix}_aligned_reads_uniq.txt
+
+    # (9) Filter the unique/total read counts to only include genomes inferred as present
+    # (Again, for fast filtering, create a grep pattern and then use grep)
+    sed ':a;N;$!ba;s/\n/\t|/g' ${outprefix}_present_genomes.txt \
+      | head -c -1 > ${outprefix}_present_genomes_temp.txt
     echo -e "\t" >> ${outprefix}_present_genomes_temp.txt
-elif [[ ${mode} == "contigs" ]]; then
-    sed ':a;N;$!ba;s/\n/_|/g' ${outprefix}_present_genomes.txt | head -c -1 > ${outprefix}_present_genomes_temp.txt
-    echo "_" >> ${outprefix}_present_genomes_temp.txt
+    head -n 1 ${outprefix}_unique.tab > ${outprefix}_unique_filtered.tab
+    grep -E -f ${outprefix}_present_genomes_temp.txt ${outprefix}_unique.tab \
+      >> ${outprefix}_unique_filtered.tab
+
+    # Also remove species with no uniquely-mapped reads mapped to them
+    awk -F'\t' 'NR==1 || $3 != 0' ${outprefix}_unique_filtered.tab \
+      > ${outprefix}_unique_filtered_tmp.tab \
+      && mv ${outprefix}_unique_filtered_tmp.tab ${outprefix}_unique_filtered.tab
+
+    # How many species are we left with after also including only species with uniquely mapped reads?
+    count=`wc -l < ${outprefix}_unique_filtered.tab`
+    echo -e "GENOMES\t5_genomes_present_with_uniquely_mapped_reads\t$((count-1))" >> ${outprefix}_stats.tab
 fi
-
-# Filter read alignments using the above patterns
-samtools view ${outprefix}_unique_prop_pair.bam | grep -E -f ${outprefix}_present_genomes_temp.txt | cut -f 1 | sort | uniq > ${outprefix}_aligned_reads_uniq.txt
-
-# Record statistics (note that each read pair is listed once here, so the line count is multiplied by 2)
-count=`wc -l < ${outprefix}_aligned_reads_uniq.txt`
-echo -e "READS\t6_mapped_reads_uniques_proper_pairs_genomes_present\t$((count * 2))" >> ${outprefix}_stats.tab
-
-# Compress
-gzip -f ${outprefix}_aligned_reads_uniq.txt
-
-# (9) Filter the unique/total read counts to only include genomes inferred as present
-# (Again, for fast filtering, create a grep pattern and then use grep)
-sed ':a;N;$!ba;s/\n/\t|/g' ${outprefix}_present_genomes.txt | head -c -1 > ${outprefix}_present_genomes_temp.txt
-echo -e "\t" >> ${outprefix}_present_genomes_temp.txt
-head -n 1 > ${outprefix}_unique_filtered.tab
-grep -E -f ${outprefix}_present_genomes_temp.txt ${outprefix}_unique.tab >> ${outprefix}_unique_filtered.tab
-
-# Also remove species with no uniquely-mapped reads mapped to them
-awk -F'\t' 'NR==1 || $3 != 0' ${outprefix}_unique_filtered.tab > ${outprefix}_unique_filtered_tmp.tab && mv ${outprefix}_unique_filtered_tmp.tab ${outprefix}_unique_filtered.tab
-
-# How many species are we left with after also including only species with uniquely mapped reads?
-count=`wc -l < ${outprefix}_unique_filtered.tab`
-echo -e "GENOMES\t5_genomes_present_with_uniquely_mapped_reads\t$((count-1))" >> ${outprefix}_stats.tab
 
 # (10) Clean tmp files
 echo "$(timestamp) [ map2ref pipeline ] Cleaning tmp files ..."
@@ -239,7 +254,6 @@ rm -rf ${outprefix}_unique.ba*
 rm -rf ${outprefix}_unique.tab
 rm -rf ${outprefix}_unique_depth*
 rm -rf ${outprefix}_unique_prop_pair.ba*
-rm -rf ${outprefix}_unique_filtered_genomes.ba*
 rm -rf ${outprefix}_raw.ba*
 rm -rf ${outprefix}_ani_cov.ba*
 rm -rf ${outprefix}_depth*
