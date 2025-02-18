@@ -194,7 +194,7 @@ count=`wc -l < ${outprefix}_present_genomes.txt`
 echo -e "GENOMES\t4_genomes_present_after_breadth_filters\t${count}" >> ${outprefix}_stats.tab
 if [ ${count} -eq 0 ]
 then
-    echo "$(timestamp) [ map2ref pipeline ] No genomes inferred as present in this sample, using the provided thresholds."
+    echo "$(timestamp) [ map2ref pipeline ] No genomes inferred as present in this sample when using the provided coverage thresholds."
     echo -e "READS\t6_mapped_reads_uniques_proper_pairs_genomes_present\t0" >> ${outprefix}_stats.tab
     # Create empty files to support downstream commands
     echo "" > ${outprefix}_aligned_reads_uniq.txt
