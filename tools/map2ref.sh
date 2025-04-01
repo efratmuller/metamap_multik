@@ -41,6 +41,7 @@ outprefix=
 mode=
 min_br=5
 min_ratio=0.85
+clean_intermediate_files=1
 
 # Read command line arguments
 while getopts “t:i:n:r:o:c:b:e:” OPTION
@@ -118,7 +119,9 @@ echo -e "category\tkey\tvalue" > ${outprefix}_stats.tab
 count=$(seqtk size ${reads} | awk '{print $1}')
 echo -e "READS\t1_total_qc_reads\t$((count * 2))" >> ${outprefix}_stats.tab
 
+# -----------------------------------------------------------------
 # (1) Initial mapping agaist the reference database
+# -----------------------------------------------------------------
 echo "$(timestamp) [ map2ref pipeline ] Running BWA ..."
 rm -f ${outprefix}*bam*
 bwa mem -M -t ${threads} ${ref} ${reads} ${reads2} \
@@ -135,7 +138,9 @@ then
 fi
 echo -e "READS\t2_mapped_reads\t${count}" >> ${outprefix}_stats.tab
 
-# (2) Keep only alignments where >60% of the read had >90% identity to the reference
+# -----------------------------------------------------------------
+# (2) Keep only alignments with >60% alignment fraction & >90% ANI
+# -----------------------------------------------------------------
 echo "$(timestamp) [ map2ref pipeline ] Filtering by coverage and ANI ..."
 tools/bam_ani-filter.py ${outprefix}_raw.bam 90 60 | samtools view - -o ${outprefix}_ani_cov.bam
 samtools index -@ ${threads_sam} ${outprefix}_ani_cov.bam
@@ -144,7 +149,9 @@ samtools index -@ ${threads_sam} ${outprefix}_ani_cov.bam
 count=`samtools view ${outprefix}_ani_cov.bam | cut -f 1 | wc -l`
 echo -e "READS\t3_mapped_reads_90_ANI_60_AF_filters\t${count}" >> ${outprefix}_stats.tab
 
+# -----------------------------------------------------------------
 # (3) Extract unique counts (reads mapped to a single reference)
+# -----------------------------------------------------------------
 echo "$(timestamp) [ map2ref pipeline ] Extracting unique counts ..."
 samtools view -@ ${threads_sam} -q 1 ${outprefix}_ani_cov.bam -o ${outprefix}_unique.bam
 samtools index -@ ${threads_sam} ${outprefix}_unique.bam
@@ -153,7 +160,10 @@ samtools index -@ ${threads_sam} ${outprefix}_unique.bam
 count=`samtools view ${outprefix}_unique.bam | cut -f 1 | wc -l`
 echo -e "READS\t4_mapped_reads_uniques\t${count}" >> ${outprefix}_stats.tab
 
-# (4) For the unique counts - also remove paired reads that were mapped to different genomes
+# -----------------------------------------------------------------
+# (4) For the unique counts - also remove paired reads that were 
+#     mapped to different genomes
+# -----------------------------------------------------------------
 samtools view -@ ${threads_sam} -f 2 ${outprefix}_unique.bam -o ${outprefix}_unique_prop_pair.bam
 samtools index -@ ${threads_sam} ${outprefix}_unique_prop_pair.bam
 
@@ -161,7 +171,10 @@ samtools index -@ ${threads_sam} ${outprefix}_unique_prop_pair.bam
 count=`samtools view ${outprefix}_unique_prop_pair.bam | cut -f 1 | wc -l`
 echo -e "READS\t5_mapped_reads_uniques_proper_pairs\t${count}" >> ${outprefix}_stats.tab
 
-# (5) Parse total count output (this time including reads mapped to multiple references but randomly assigned to one)
+# -----------------------------------------------------------------
+# (5) Parse total count output (this time including reads mapped to 
+#     multiple references but randomly assigned to one)
+# -----------------------------------------------------------------
 echo "$(timestamp) [ map2ref pipeline ] Parsing alignment results ..."
 samtools idxstats ${outprefix}_ani_cov.bam > ${outprefix}_depth.tab
 samtools depth ${outprefix}_ani_cov.bam > ${outprefix}_depth-pos.tab
@@ -176,7 +189,9 @@ echo -e "GENOMES\t1_total_genomes\t$((count-1))" >> ${outprefix}_stats.tab
 count=`awk -F'\t' '$3 > 0' ${outprefix}_total.tab | wc -l`
 echo -e "GENOMES\t2_genomes_with_mapped_reads\t${count}" >> ${outprefix}_stats.tab
 
+# -----------------------------------------------------------------
 # (6) Parse unique count output
+# -----------------------------------------------------------------
 echo "$(timestamp) [ map2ref pipeline ] Counting unique reads per genome ..."
 samtools idxstats ${outprefix}_unique_prop_pair.bam > ${outprefix}_unique_depth.tab
 samtools depth ${outprefix}_unique_prop_pair.bam > ${outprefix}_unique_depth-pos.tab
@@ -185,7 +200,10 @@ tools/parse_bwa-depth.py ${outprefix}_unique_depth.tab ${outprefix}_unique_depth
 count=`awk -F'\t' '$3 > 0' ${outprefix}_unique.tab | wc -l`
 echo -e "GENOMES\t3_genomes_with_uniquely_mapped_reads\t${count}" >> ${outprefix}_stats.tab
 
-# (7) Infer which genomes are present based on the observed breadth and observed/expected breadth ratio.
+# -----------------------------------------------------------------
+# (7) Infer which genomes are present based on the observed breadth
+#     and observed/expected breadth ratio.
+# -----------------------------------------------------------------
 echo "$(timestamp) [ map2ref pipeline ] Inferring presence/absence of species ..."
 awk -F'\t' -v min_br=${min_br} -v min_ratio=${min_ratio} \
   '$3 > 0 && $5 > min_br && $8 > min_ratio { print $1 }' \
@@ -201,7 +219,11 @@ then
     gzip -f ${outprefix}_aligned_reads_uniq.txt
     head -n 1 ${outprefix}_unique.tab > ${outprefix}_unique_filtered.tab
 else
-    # (8) Save a list of aligned reads (uniquely mapped, after filtering genomes inferred as present in the sample)
+
+    # -------------------------------------------------------------
+    # (8) Save a list of aligned reads (uniquely mapped, after 
+    #     filtering genomes inferred as present in the sample)
+    # -------------------------------------------------------------
     # This list will be used to calculate the number of reads that were mapped to multiple reference catalogs.
     echo "$(timestamp) [ map2ref pipeline ] Filtering read counts by inferred species presence ..."
 
@@ -229,7 +251,10 @@ else
     # Compress
     gzip -f ${outprefix}_aligned_reads_uniq.txt
 
-    # (9) Filter the unique/total read counts to only include genomes inferred as present
+    # -------------------------------------------------------------
+    # (9) Filter the unique/total read counts to only include 
+    #     genomes inferred as present
+    # -------------------------------------------------------------
     # (Again, for fast filtering, create a grep pattern and then use grep)
     sed ':a;N;$!ba;s/\n/\t|/g' ${outprefix}_present_genomes.txt \
       | head -c -1 > ${outprefix}_present_genomes_temp.txt
@@ -248,14 +273,19 @@ else
     echo -e "GENOMES\t5_genomes_present_with_uniquely_mapped_reads\t$((count-1))" >> ${outprefix}_stats.tab
 fi
 
-# (10) Clean tmp files
-echo "$(timestamp) [ map2ref pipeline ] Cleaning tmp files ..."
-rm -rf ${outprefix}_unique.ba*
-rm -rf ${outprefix}_unique.tab
-rm -rf ${outprefix}_unique_depth*
-rm -rf ${outprefix}_unique_prop_pair.ba*
-rm -rf ${outprefix}_raw.ba*
-rm -rf ${outprefix}_ani_cov.ba*
-rm -rf ${outprefix}_depth*
-rm -rf ${outprefix}_present_genomes*
+# -----------------------------------------------------------------
+# (10) Clean intrmediate files
+# -----------------------------------------------------------------
+if [ ${clean_intermediate_files} -eq 1 ]
+then
+    echo "$(timestamp) [ map2ref pipeline ] Cleaning tmp files ..."
+    rm -rf ${outprefix}_unique.ba*
+    rm -rf ${outprefix}_unique_depth*
+    rm -rf ${outprefix}_unique_prop_pair.ba*
+    rm -rf ${outprefix}_raw.ba*
+    rm -rf ${outprefix}_ani_cov.ba*
+    rm -rf ${outprefix}_depth*
+    rm -rf ${outprefix}_present_genomes*
+fi
+
 echo "$(timestamp) [ map2ref pipeline ] Done."

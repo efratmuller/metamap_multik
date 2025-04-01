@@ -59,7 +59,7 @@ def collectCounts(folder, ftype, db_name, out_file):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parse BWA results to extract counts')
     parser.add_argument('-i', dest='in_folder', help='Input folder (files should be in subdirectories)', required=True)
-    parser.add_argument('-f', dest='ftype', help='\'unique\' or \'total\' counts', required=True)
+    parser.add_argument('-f', dest='ftype', help='\'unique\' or \'unique_filtered\' or \'total\' counts', required=True)
     parser.add_argument('-d', dest='db_name', help='Name of DB of reference genomes', required=True)
     parser.add_argument('-o', dest='out_file', help='Output CSV file', required=True)
 
