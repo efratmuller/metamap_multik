@@ -9,6 +9,7 @@
 # snakemake -n
 
 import os
+import re
 
 # read configuration yml
 configfile: "config.yml"
@@ -27,7 +28,8 @@ with open(INPUT_FILE) as f:
         cols = line.strip().split()
         fwd = cols[0]
         rev = cols[1]
-        sample = os.path.basename(cols[0]).split("_1.fastq")[0]
+        sample = os.path.basename(cols[0])
+        sample = re.sub(r'(_R?1\.fastq(\.gz)?)$', '', sample)
         samp2path[sample] = [fwd, rev]
 
 # create folders required for later
@@ -41,6 +43,7 @@ if not os.path.exists(OUTPUT_DIR+"/summary/logs"):
 rule all:
     input:
         expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_counts_total.csv", ref_db=REF_DBS),
+        expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_counts_unique.csv", ref_db=REF_DBS),
         expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_counts_unique_filtered.csv", ref_db=REF_DBS),
         expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_cov_est.csv", ref_db=REF_DBS),
         expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_cov_exp.csv", ref_db=REF_DBS),
@@ -56,6 +59,7 @@ rule map2ref:
         OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_stats.tab",
         OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_aligned_reads_uniq.txt.gz",
         OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_unique_filtered.tab",
+        OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_unique.tab",
         OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_total.tab"
     params:
         outpref = OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}",
