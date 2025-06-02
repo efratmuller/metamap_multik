@@ -1,10 +1,10 @@
 # Required arguments
 
 input:
-    "/rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/positive_controls_test/positive_controls_fastqs.txt"
+    "/rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/all_27052025/fastq_list_for_metamap_29042025_TMP.tsv"
 
 output: 
-    "/rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/positive_controls_test"
+    "/rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/all_27052025"
 
 databases:
   uhgg:
@@ -14,7 +14,7 @@ databases:
     breadth_obs_exp_ratio: 0.3
 
   uhgv:
-    bwa_db: "/rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgv_nayfach/votus_mq_plus.fna" # combined fasta file indexed with BWA
+    bwa_db: "/rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgv_nayfach/filtered_db/votus_mq_plus_no_contam.fna"
     type: "complete" # contigs or complete
-    breadth_threshold: 5
-    breadth_obs_exp_ratio: 0.85
+    breadth_threshold: 10
+    breadth_obs_exp_ratio: 0.5

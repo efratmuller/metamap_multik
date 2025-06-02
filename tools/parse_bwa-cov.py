@@ -40,4 +40,4 @@ if __name__ == '__main__':
         covs = getCov(args.in_folder, args.db_name)
         with open(args.out_file, "w") as f_out:
             for data in covs:
-                f_out.write(",".join(data)+"\n")            
+                f_out.write(",".join(data)+"\n")

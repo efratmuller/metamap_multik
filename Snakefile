@@ -3,7 +3,7 @@
 # To run:
 # cd /rds/project/rds-aFEMMKDjWlo/emuller/phages_project/scripts/metamap_multik
 # conda activate snakemake
-# snakemake --use-conda -k -j 50 --cluster-config cluster.yml --cluster 'sbatch -A {cluster.project} -p {cluster.queue} --ntasks={cluster.nCPU} --mem={cluster.mem} -o {cluster.output} --time={cluster.time} -J {cluster.name}'
+# snakemake --use-conda -k -j 40 --cluster-config cluster.yml --cluster 'sbatch -A {cluster.project} -p {cluster.queue} --ntasks 1 --cpus-per-task={cluster.nCPU} --mem={cluster.mem} -o {cluster.output} --time={cluster.time} -J {cluster.name}'
 
 # Dry run:
 # snakemake -n
@@ -46,8 +46,8 @@ rule all:
         expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_counts_unique.csv", ref_db=REF_DBS),
         expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_counts_unique_filtered.csv", ref_db=REF_DBS),
         expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_cov_est.csv", ref_db=REF_DBS),
-        expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_cov_exp.csv", ref_db=REF_DBS),
-        expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_multi_mapped_reads.txt", sample=samp2path.keys()),
+        expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_cov_exp_obs_ratio.csv", ref_db=REF_DBS),
+        expand(OUTPUT_DIR+"/summary/bwa_{ref_db}_genome_presence_absence.csv", ref_db=REF_DBS),
         OUTPUT_DIR+"/summary/bwa_mapping_stats.tab"
 
 # map metagenomes to catalog B (performed once per run acceesion)
@@ -57,7 +57,8 @@ rule map2ref:
         rev = lambda wildcards: samp2path[wildcards.sample][1]
     output:
         OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_stats.tab",
-        OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_aligned_reads_uniq.txt.gz",
+        OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_aligned_reads_fwd.txt.gz",
+        OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_aligned_reads_rev.txt.gz",
         OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_unique_filtered.tab",
         OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_unique.tab",
         OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_total.tab"
@@ -77,21 +78,21 @@ rule map2ref:
 # calculate overlap of mapped reads
 rule get_mapping_overlaps:
     input:
-        lambda wildcards: expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_aligned_reads_uniq.txt.gz", sample=wildcards.sample, ref_db=REF_DBS)
+        lambda wildcards: expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_aligned_reads_{direction}.txt.gz", sample=wildcards.sample, ref_db=REF_DBS, direction=wildcards.direction)
     output:
-        OUTPUT_DIR+"/mapping/{sample}/{sample}_multi_mapped_reads.txt"
+        OUTPUT_DIR+"/mapping/{sample}/{sample}_multi_mapped_reads_{direction}.txt"
     shell:
         """
         zcat {input[0]} {input[1]} | sort | uniq -d > {output}
         """
 
-# compute breadth of coverage and expected coverage per genome from each catalog
+# organize statistics about breadth of coverage and expected coverage per genome 
 rule parse_cov:
     input:
         lambda wildcards: expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_total.tab", sample=samp2path.keys(), ref_db=wildcards.ref_db)
     output:
         OUTPUT_DIR+"/summary/bwa_{ref_db}_cov_est.csv",
-        OUTPUT_DIR+"/summary/bwa_{ref_db}_cov_exp.csv"
+        OUTPUT_DIR+"/summary/bwa_{ref_db}_cov_exp_obs_ratio.csv"
     params:
         in_dir = OUTPUT_DIR+"/mapping"
     conda:
@@ -99,7 +100,24 @@ rule parse_cov:
     shell:
         """
         tools/parse_bwa-cov.py -i {params.in_dir} -d {wildcards.ref_db} -o {output[0]}
-        tools/parse_bwa-expcov.py -i {params.in_dir} -d {wildcards.ref_db} -o {output[1]}
+        tools/parse_bwa-exp-obs-ratio.py -i {params.in_dir} -d {wildcards.ref_db} -o {output[1]}
+        """
+
+# based on coverage statistics, also save a presence/absence matrix per catalog 
+rule save_presence_absence:
+    input:
+        OUTPUT_DIR+"/summary/bwa_{ref_db}_cov_est.csv",
+        OUTPUT_DIR+"/summary/bwa_{ref_db}_cov_exp_obs_ratio.csv"
+    output:
+        OUTPUT_DIR+"/summary/bwa_{ref_db}_genome_presence_absence.csv"
+    params:
+        cov_thresh = lambda wildcards: DB_PROPERTIES[wildcards.ref_db]["breadth_threshold"], 
+        cov_exp_ratio_thresh = lambda wildcards: DB_PROPERTIES[wildcards.ref_db]["breadth_obs_exp_ratio"] 
+    conda:
+        "envs/metamap.yml"
+    shell:
+        """
+        tools/get_genome_presence_absence_matrices.py --csv1 {input[0]} --csv2 {input[1]} --t1 {params.cov_thresh} --t2 {params.cov_exp_ratio_thresh} -o {output}
         """
 
 # organize final count tables (both unique and total, for both reference databases) 
@@ -120,7 +138,7 @@ rule parse_read_counts:
 # collect statistics per sample into a single table
 rule collect_stats:
     input:
-        expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_multi_mapped_reads.txt", sample=samp2path.keys()),
+        expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_multi_mapped_reads_{direction}.txt", sample=samp2path.keys(), direction=['fwd','rev']),
         expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_stats.tab", sample=samp2path.keys(), ref_db=REF_DBS)
     output:
         OUTPUT_DIR+"/summary/bwa_mapping_stats.tab"

@@ -3,12 +3,12 @@
 # Collect and merge all mapping statistics from all samples and all reference databases.
 
 # To run:
-# cd /rds/project/rds-aFEMMKDjWlo/emuller/phages_project/scripts/metamap_multik
-# tools/parse_bwa-stats.py -i /home/em2035/rds/hpc-work/mapping_tests/output_test/mapping -o /home/em2035/rds/hpc-work/mapping_tests/output_test/summary/all_stats_test.tsv
+# /rds/project/rds-aFEMMKDjWlo/emuller/phages_project/scripts/metamap_multik/tools/parse_bwa-stats.py -i /home/em2035/rds/rds-micro-fun-div-aFEMMKDjWlo/emuller/phages_project/mapping/all_01042025 -o /home/em2035/rds/hpc-work/mapping_tests/output_test/summary/all_stats_test.tsv
 
 import os
 import argparse
 import pandas as pd
+import numpy as np
 
 def parse_stats_filename(filename):
     """Extract run_accession and db_name from the filename."""
@@ -58,6 +58,7 @@ def process_stats_files(input_directory):
     
     # Merge all samples into a final table
     all_stats = None
+    print("Merging statistics into a single table")
     for stat_df in stats_per_run.values():
         if all_stats is None:
             all_stats = stat_df
@@ -70,18 +71,21 @@ def count_overlapping_reads(input_directory):
     # Initialize a dictionary to store overlapping read counts
     overlap_reads_per_run = {}
     
-    # Iterate over stats files
+    # Iterate over files listing multi-mapped reads
     for root, _, files in os.walk(input_directory):
-        # First, for each run accession, collect all statistics tables in a list
+        # Only search the lists of multi-mapped reads
         for filename in files:
-            if filename.endswith("_multi_mapped_reads.txt"):
-                print(f"Processing: {filename}")
+            if filename.endswith("_multi_mapped_reads_fwd.txt") or filename.endswith("_multi_mapped_reads_rev.txt"):
+                print(f"Counting reads mapped to both catalogs for: {filename}")
                 run_accession = filename.rsplit("_", 3)[0]  # Extract sample name
 
                 # Count number of reads (lines)
                 with open(os.path.join(root, filename), "r") as f:
-                    line_count = sum(1 for _ in f)
-                    overlap_reads_per_run[run_accession] = line_count
+                    line_count = sum(1 for line in f if line.strip()) # Only count lines that aren't empty
+                    if run_accession in overlap_reads_per_run:
+                        overlap_reads_per_run[run_accession] += line_count
+                    else
+                        overlap_reads_per_run[run_accession] = line_count
 
     # Convert to DataFrame
     df = pd.DataFrame([overlap_reads_per_run])
@@ -93,7 +97,7 @@ def count_overlapping_reads(input_directory):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parse BWA results to extract counts')
-    parser.add_argument('-i', dest='in_folder', help='Input folder (files should be in subdirectories)', required=True)
+    parser.add_argument('-i', dest='in_folder', help='Input folder (files should be in subdirectories, folder expected to include only subfolders of runs processed with map2ref.sh)', required=True)
     parser.add_argument('-o', dest='out_file', help='Output TSV file', required=True)
     args = parser.parse_args()
     
@@ -103,8 +107,16 @@ if __name__ == '__main__':
     # Add statistics about reads mapped to both catalogs
     overlap_stats = count_overlapping_reads(args.in_folder)
 
-    # Join the two tables
+    # Do all samples appear in both tables?
+    print("Samples with missing overlap statistics:", set(all_stats.columns) - set(overlap_stats.columns))
+    
+    # Add missing columns (if any) to overlap_stats, filled with NA
+    for col in all_stats.columns:
+        if col not in overlap_stats.columns:
+            overlap_stats[col] = np.nan
     overlap_stats = overlap_stats[all_stats.columns] # Reorder columns to match all_stats
+
+    # Join the two tables
     all_stats = pd.concat([all_stats, overlap_stats], ignore_index=True)
 
     if all_stats is not None:
