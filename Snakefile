@@ -2,8 +2,8 @@
 
 # To run:
 # cd /rds/project/rds-aFEMMKDjWlo/emuller/phages_project/scripts/metamap_multik
-# conda activate snakemake
-# snakemake --use-conda -k -j 40 --cluster-config cluster.yml --cluster 'sbatch -A {cluster.project} -p {cluster.queue} --ntasks 1 --cpus-per-task={cluster.nCPU} --mem={cluster.mem} -o {cluster.output} --time={cluster.time} -J {cluster.name}'
+# conda activate snakemake_v2
+# snakemake --use-conda -k -j 30 --cluster-config cluster.yml --cluster 'sbatch -A {cluster.project} -p {cluster.queue} --ntasks 1 --cpus-per-task={cluster.nCPU} --mem={cluster.mem} -o {cluster.output} --time={cluster.time} -J {cluster.name}'
 
 # Dry run:
 # snakemake -n
@@ -17,6 +17,7 @@ INPUT_FILE = config["input"]
 OUTPUT_DIR = config["output"]
 REF_DBS = list(config["databases"].keys())
 DB_PROPERTIES = config["databases"]
+THREADS = config["threads_for_alignment"]
 
 # verify exec permissions
 os.system("chmod -R +x tools")
@@ -63,8 +64,9 @@ rule map2ref:
         OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_unique.tab",
         OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_total.tab"
     params:
-        outpref = OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}",
-        bwa_db = lambda wildcards: DB_PROPERTIES[wildcards.ref_db]["bwa_db"],
+        threads = THREADS,
+        output_prefix = OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}",
+        ref_db = lambda wildcards: DB_PROPERTIES[wildcards.ref_db]["ref_db"],
         reftype = lambda wildcards: DB_PROPERTIES[wildcards.ref_db]["type"],
         cov_thresh = lambda wildcards: DB_PROPERTIES[wildcards.ref_db]["breadth_threshold"], 
         cov_exp_ratio_thresh = lambda wildcards: DB_PROPERTIES[wildcards.ref_db]["breadth_obs_exp_ratio"] 
@@ -72,7 +74,7 @@ rule map2ref:
         "envs/metamap.yml"
     shell:
         """
-        tools/map2ref.sh -t 16 -i {input.fwd} -n {input.rev} -r {params.bwa_db} -o {params.outpref} -c {params.reftype} -b {params.cov_thresh} -e {params.cov_exp_ratio_thresh}
+        tools/map2ref_strobealign.sh -t {params.threads} -i {input.fwd} -n {input.rev} -r {params.ref_db} -o {params.output_prefix} -c {params.reftype} -b {params.cov_thresh} -e {params.cov_exp_ratio_thresh}
         """
 
 # calculate overlap of mapped reads

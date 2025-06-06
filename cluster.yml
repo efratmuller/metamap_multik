@@ -10,7 +10,7 @@ __default__:
 map2ref:
     queue: "cclake"
     mem : "64GB"
-    time: "12:00:00"
+    time: "2:00:00"
     nCPU: 16
     output: "{OUTPUT_DIR}/mapping/{wildcards.sample}/logs/{rule}_{wildcards.ref_db}.log"
 

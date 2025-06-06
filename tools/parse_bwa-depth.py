@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# This script is executed by map2ref.sh to summarize statistics about per-genome coverage depth, breadth, etc.
+# This script is executed by map2ref.sh to summarize statistics about per-genome aligned read counts, coverage depth, breadth, etc.
 
 import os
 import sys

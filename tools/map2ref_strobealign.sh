@@ -4,21 +4,13 @@
 set -euo pipefail
 
 # Commands for testing:
-
 # lab-dir; cd emuller/phages_project/scripts/metamap_multik
-# conda activate metamap_test
+# conda activate metamap_strobealign
 
-# (with slurm)
-# sbatch -A ALMEIDA-SL2-CPU -J "m2r_v" -o /home/em2035/rds/hpc-work/mapping_tests/ERR6998314/map2ref_v.out -e /home/em2035/rds/hpc-work/mapping_tests/ERR6998314/map2ref_v.err -p cclake --mem=32G --ntasks=1 --cpus-per-task=16 --time=6:00:00 --wrap="./tools/map2ref.sh -t 16 -e 0.5 -b 10 -i /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/ERP115476/ERR6998314/ERR6998314_1.fastq.gz -n /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/ERP115476/ERR6998314/ERR6998314_2.fastq.gz -r /rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgv_nayfach/filtered_db/votus_mq_plus_no_contam.fna -o /home/em2035/rds/hpc-work/mapping_tests/ERR6998314/ERR6998314_uhgv -c complete"
-
-# sbatch -A ALMEIDA-SL2-CPU -J "m2r_b" -o /home/em2035/rds/hpc-work/mapping_tests/ERR6998314/map2ref_b.out -e /home/em2035/rds/hpc-work/mapping_tests/ERR6998314/map2ref_b.err -p cclake --mem=32G --ntasks=1 --cpus-per-task=16 --time=6:00:00 --wrap="./tools/map2ref.sh -t 16 -e 0.3 -b 5 -i /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/ERP115476/ERR6998314/ERR6998314_1.fastq.gz -n /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/ERP115476/ERR6998314/ERR6998314_2.fastq.gz -r /rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgg_v1.1/uhgg_v1.1.fa -o /home/em2035/rds/hpc-work/mapping_tests/ERR6998314/ERR6998314_uhgg -c contigs"
-
+# With slurm:
+# study_id=SRP128485; run_id=SRR6456370; sbatch -A ALMEIDA-SL2-CPU -J "m2r_v" -o /home/em2035/rds/hpc-work/mapping_tests/strobealign_tests/${run_id}/map2ref_v.out -e /home/em2035/rds/hpc-work/mapping_tests/strobealign_tests/${run_id}/map2ref_v.err -p cclake --mem=64G --ntasks=1 --cpus-per-task=8 --time=2:00:00 --wrap="./tools/map2ref_strobealign.sh -t 8 -e 0.5 -b 10 -i /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/${study_id}/${run_id}/${run_id}_1.fastq.gz -n /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/${study_id}/${run_id}/${run_id}_2.fastq.gz -r /rds/project/rds-aFEMMKDjWlo/rfs_data/databases/strobealign/uhgv_nayfach/filtered_db/votus_mq_plus_no_contam.fna -o /home/em2035/rds/hpc-work/mapping_tests/strobealign_tests/${run_id}/${run_id}_uhgv -c complete"
+# study_id=SRP128485; run_id=SRR6456370; sbatch -A ALMEIDA-SL2-CPU -J "m2r_b" -o /home/em2035/rds/hpc-work/mapping_tests/strobealign_tests/${run_id}/map2ref_b.out -e /home/em2035/rds/hpc-work/mapping_tests/strobealign_tests/${run_id}/map2ref_b.err -p cclake --mem=64G --ntasks=1 --cpus-per-task=8 --time=2:00:00 --wrap="./tools/map2ref_strobealign.sh -t 8 -e 0.3 -b 5 -i /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/${study_id}/${run_id}/${run_id}_1.fastq.gz -n /rds/project/rds-aFEMMKDjWlo/rfs_data/metagenomes/fastqs/${study_id}/${run_id}/${run_id}_2.fastq.gz -r /rds/project/rds-aFEMMKDjWlo/rfs_data/databases/strobealign/uhgg_v1.1/uhgg_v1.1.fa -o /home/em2035/rds/hpc-work/mapping_tests/strobealign_tests/${run_id}/${run_id}_uhgg -c contigs"
 # conda deactivate
-
-
-# SRP128485/SRR6456370
-# ERP115476/ERR6998314
-
 
 usage()
 {
@@ -137,18 +129,17 @@ fi
 # (1) Initial mapping agaist the reference database
 # -----------------------------------------------------------------
 
-echo "$(timestamp) [ map2ref pipeline ] Running BWA ..."
+echo "$(timestamp) [ map2ref pipeline ] Running Strobealign ..."
 rm -f ${outprefix}*bam*
-bwa mem -M -t ${threads} ${ref} ${reads} ${reads2} \
-  | samtools view -@ ${threads_sam} -F 256 -uS - \
-  | samtools sort -@ ${threads_sam} - -o ${outprefix}_raw.bam
+strobealign -t ${threads} --no-PG --use-index -v -U --mcs ${ref} ${reads} ${reads2} \
+  | samtools sort -@ ${threads_sam} -o ${outprefix}_raw.bam
 samtools index -@ ${threads_sam} ${outprefix}_raw.bam
 
 # Record the total number of mapped reads (-F 4 removes unmapped reads)
 count=`samtools view -F 4 ${outprefix}_raw.bam | wc -l`
 if [ ${count} -eq 0 ]
 then
-    echo "$(timestamp) [ map2ref pipeline ] ERROR: bwa failed. Verify sufficient resources for bwa mem run, or problems with input fastq files (e.g., issues with paired reads)."
+    echo "$(timestamp) [ map2ref pipeline ] ERROR: strobealign failed. See logs."
     sync # Flush outputs before exiting
     exit 1
 fi
@@ -159,7 +150,7 @@ echo -e "READS\t2_mapped_reads\t${count}" >> ${outprefix}_stats.tab
 # -----------------------------------------------------------------
 
 echo "$(timestamp) [ map2ref pipeline ] Filtering by coverage and ANI ..."
-tools/bam_ani-filter.py ${outprefix}_raw.bam 90 60 | samtools view - -o ${outprefix}_ani_cov.bam
+tools/bam_ani-filter.py ${outprefix}_raw.bam 90 60 | samtools view -o ${outprefix}_ani_cov.bam
 samtools index -@ ${threads_sam} ${outprefix}_ani_cov.bam
 
 # Record the number of mapped reads following the above filter
@@ -231,7 +222,7 @@ echo "$(timestamp) [ map2ref pipeline ] Inferring presence/absence of species ..
 # Note: The filtering of genomes is based on coverage and expected coverage as calculated based 
 #  on the *total* number of reads assigned to each genome, and not only uniquely-assigned reads.
 awk -F'\t' -v min_br=${min_br} -v min_ratio=${min_ratio} \
-  '$3 > 0 && $5 > min_br && $8 > min_ratio { print $1 }' \
+  'NR > 1 && $3 > 0 && $5 > min_br && $8 > min_ratio { print $1 }' \
   ${outprefix}_total.tab > ${outprefix}_present_genomes.txt
 count=`wc -l < ${outprefix}_present_genomes.txt`
 echo -e "GENOMES\t4_genomes_present_after_breadth_filters\t${count}" >> ${outprefix}_stats.tab

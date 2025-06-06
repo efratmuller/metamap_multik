@@ -1,20 +1,22 @@
 # Required arguments
 
 input:
-    "/rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/all_27052025/fastq_list_for_metamap_29042025_TMP.tsv"
+    "/rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/all_27052025/fastq_list_for_metamap_29042025.tsv"
 
 output: 
     "/rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/all_27052025"
 
 databases:
   uhgg:
-    bwa_db: "/rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgg_v1.1/uhgg_v1.1.fa" # combined fasta file indexed with BWA
+    ref_db: "/rds/project/rds-aFEMMKDjWlo/rfs_data/databases/strobealign/uhgg_v1.1/uhgg_v1.1.fa" # combined fasta file indexed with BWA
     type: "contigs" # contigs or complete
     breadth_threshold: 5
     breadth_obs_exp_ratio: 0.3
 
   uhgv:
-    bwa_db: "/rds/project/rds-aFEMMKDjWlo/rfs_data/databases/bwa/uhgv_nayfach/filtered_db/votus_mq_plus_no_contam.fna"
+    ref_db: "/rds/project/rds-aFEMMKDjWlo/rfs_data/databases/strobealign/uhgv_nayfach/filtered_db/votus_mq_plus_no_contam.fna"
     type: "complete" # contigs or complete
     breadth_threshold: 10
     breadth_obs_exp_ratio: 0.5
+
+threads_for_alignment: 16
