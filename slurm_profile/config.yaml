@@ -1,0 +1,6 @@
+cluster: "sbatch -A {cluster.project} -p {cluster.queue} --ntasks 1 --cpus-per-task={cluster.nCPU} --mem={cluster.mem} -o {cluster.output} --time={cluster.time} -J {cluster.name}"
+cluster-config: "cluster.yaml"
+jobs: 40
+latency-wait: 60
+use-conda: true
+keep-going: true

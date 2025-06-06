@@ -3,7 +3,7 @@
 # To run:
 # cd /rds/project/rds-aFEMMKDjWlo/emuller/phages_project/scripts/metamap_multik
 # conda activate snakemake_v2
-# snakemake --use-conda -k -j 30 --cluster-config cluster.yml --cluster 'sbatch -A {cluster.project} -p {cluster.queue} --ntasks 1 --cpus-per-task={cluster.nCPU} --mem={cluster.mem} -o {cluster.output} --time={cluster.time} -J {cluster.name}'
+# snakemake --profile slurm_profile
 
 # Dry run:
 # snakemake -n
