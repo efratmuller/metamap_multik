@@ -1,5 +1,6 @@
 name: metamap
 channels:
+  - conda-forge
   - bioconda
 dependencies:
   - numpy

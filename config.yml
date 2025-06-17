@@ -1,7 +1,7 @@
 # Required arguments
 
 input:
-    "/rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/all_27052025/fastq_list_for_metamap_29042025.tsv"
+    "/rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/all_27052025/fastq_list_for_metamap_29042025_batch1.tsv"
 
 output: 
     "/rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/all_27052025"
