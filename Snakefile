@@ -3,7 +3,7 @@
 # To run:
 # cd /rds/project/rds-aFEMMKDjWlo/emuller/phages_project/scripts/metamap_multik
 # conda activate snakemake_v2
-# snakemake --profile slurm_profile
+# snakemake --profile slurm_profile --rerun-incomplete --rerun-trigger mtime
 
 # Dry run:
 # snakemake -n
@@ -72,6 +72,7 @@ rule map2ref:
         cov_exp_ratio_thresh = lambda wildcards: DB_PROPERTIES[wildcards.ref_db]["breadth_obs_exp_ratio"] 
     conda:
         "envs/metamap.yml"
+    threads: 16
     shell:
         """
         tools/map2ref_strobealign.sh -t {params.threads} -i {input.fwd} -n {input.rev} -r {params.ref_db} -o {params.output_prefix} -c {params.reftype} -b {params.cov_thresh} -e {params.cov_exp_ratio_thresh}
@@ -80,12 +81,15 @@ rule map2ref:
 # calculate overlap of mapped reads
 rule get_mapping_overlaps:
     input:
-        lambda wildcards: expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_aligned_reads_{direction}.txt.gz", sample=wildcards.sample, ref_db=REF_DBS, direction=wildcards.direction)
+        lambda wildcards: expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_aligned_reads_fwd.txt.gz", sample=wildcards.sample, ref_db=REF_DBS),
+        lambda wildcards: expand(OUTPUT_DIR+"/mapping/{sample}/{sample}_{ref_db}_aligned_reads_rev.txt.gz", sample=wildcards.sample, ref_db=REF_DBS)
     output:
-        OUTPUT_DIR+"/mapping/{sample}/{sample}_multi_mapped_reads_{direction}.txt"
+        OUTPUT_DIR+"/mapping/{sample}/{sample}_multi_mapped_reads_fwd.txt",
+        OUTPUT_DIR+"/mapping/{sample}/{sample}_multi_mapped_reads_rev.txt"
     shell:
         """
-        zcat {input[0]} {input[1]} | sort | uniq -d > {output}
+        zcat {input[0]} {input[1]} | sort | uniq -d > {output[0]}
+        zcat {input[2]} {input[3]} | sort | uniq -d > {output[1]}
         """
 
 # organize statistics about breadth of coverage and expected coverage per genome 
