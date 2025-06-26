@@ -3,7 +3,7 @@
 # Collect and merge all mapping statistics from all samples and all reference databases.
 
 # To run:
-# /rds/project/rds-aFEMMKDjWlo/emuller/phages_project/scripts/metamap_multik/tools/parse_bwa-stats.py -i /home/em2035/rds/rds-micro-fun-div-aFEMMKDjWlo/emuller/phages_project/mapping/all_01042025 -o /home/em2035/rds/hpc-work/mapping_tests/output_test/summary/all_stats_test.tsv
+# /rds/project/rds-aFEMMKDjWlo/emuller/phages_project/scripts/metamap_multik/tools/parse_bwa-stats.py -i /rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/positive_controls/mapping -o /rds/project/rds-aFEMMKDjWlo/emuller/phages_project/mapping/positive_controls/summary/bwa_mapping_stats.tab
 
 import os
 import argparse
@@ -77,14 +77,14 @@ def count_overlapping_reads(input_directory):
         for filename in files:
             if filename.endswith("_multi_mapped_reads_fwd.txt") or filename.endswith("_multi_mapped_reads_rev.txt"):
                 print(f"Counting reads mapped to both catalogs for: {filename}")
-                run_accession = filename.rsplit("_", 3)[0]  # Extract sample name
+                run_accession = filename.rsplit("_")[0]  # Extract sample name
 
                 # Count number of reads (lines)
                 with open(os.path.join(root, filename), "r") as f:
                     line_count = sum(1 for line in f if line.strip()) # Only count lines that aren't empty
                     if run_accession in overlap_reads_per_run:
                         overlap_reads_per_run[run_accession] += line_count
-                    else
+                    else:
                         overlap_reads_per_run[run_accession] = line_count
 
     # Convert to DataFrame

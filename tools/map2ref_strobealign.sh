@@ -131,8 +131,8 @@ fi
 
 echo "$(timestamp) [ map2ref pipeline ] Running Strobealign ..."
 rm -f ${outprefix}*bam*
-strobealign -t ${threads} --no-PG --use-index -v -U --mcs ${ref} ${reads} ${reads2} \
-  | samtools sort -@ ${threads_sam} -o ${outprefix}_raw.bam
+strobealign -t ${threads} --no-PG --use-index -v -U --mcs ${ref} ${reads} ${reads2} | \
+    samtools sort -@ ${threads_sam} -o ${outprefix}_raw.bam 
 samtools index -@ ${threads_sam} ${outprefix}_raw.bam
 
 # Record the total number of mapped reads (-F 4 removes unmapped reads)
