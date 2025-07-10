@@ -244,8 +244,10 @@ then
     echo -e "GENOMES\t5_genomes_present_with_uniquely_mapped_reads\t0" >> ${outprefix}_stats.tab
     
     # Create empty files to support downstream commands / rules
-    echo "" > ${outprefix}_aligned_reads_uniq.txt
-    gzip -f ${outprefix}_aligned_reads_uniq.txt
+    echo "" > ${outprefix}_aligned_reads_fwd.txt
+    gzip -f ${outprefix}_aligned_reads_fwd.txt
+    echo "" > ${outprefix}_aligned_reads_rev.txt
+    gzip -f ${outprefix}_aligned_reads_rev.txt
     head -n 1 ${outprefix}_unique.tab > ${outprefix}_unique_filtered.tab
 else
 

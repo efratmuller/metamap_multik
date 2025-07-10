@@ -235,8 +235,10 @@ then
     echo -e "GENOMES\t5_genomes_present_with_uniquely_mapped_reads\t0" >> ${outprefix}_stats.tab
     
     # Create empty files to support downstream commands / rules
-    echo "" > ${outprefix}_aligned_reads_uniq.txt
-    gzip -f ${outprefix}_aligned_reads_uniq.txt
+    echo "" > ${outprefix}_aligned_reads_fwd.txt
+    gzip -f ${outprefix}_aligned_reads_fwd.txt
+    echo "" > ${outprefix}_aligned_reads_rev.txt
+    gzip -f ${outprefix}_aligned_reads_rev.txt
     head -n 1 ${outprefix}_unique.tab > ${outprefix}_unique_filtered.tab
 else
 
@@ -260,15 +262,28 @@ else
     fi
 
     # Filter read alignments using the above patterns
-    # (We record forward and reverse reads seperatly, as even though reads were properly paired, 
+    # (We record forward and reverse reads seperatly. Even though reads were properly paired, 
     #  in some cases one of the strands did not pass the ANI/coverage thresholds)
-    samtools view -F 16 ${outprefix}_unique_prop_pair.bam \
-      | grep -E -f ${outprefix}_present_genomes_temp.txt \
-      | cut -f 1 > ${outprefix}_aligned_reads_fwd.txt
+    # Note: grep returns exit code 1 when no matches are found, and when using 
+    #  "set -euo pipefail", this causes the entire script to fail. We therefore wrap 
+    #  this line in an if/else to catch these cases.
+    if samtools view -F 16 ${outprefix}_unique_prop_pair.bam \
+        | grep -E -f ${outprefix}_present_genomes_temp.txt \
+        | cut -f 1 > ${outprefix}_aligned_reads_fwd.txt; then
+        : # Do nothing
+    else
+        # We create an empty file so downstream steps don't break
+        touch ${outprefix}_aligned_reads_fwd.txt
+    fi
 
-    samtools view -f 16 ${outprefix}_unique_prop_pair.bam \
-      | grep -E -f ${outprefix}_present_genomes_temp.txt \
-      | cut -f 1 > ${outprefix}_aligned_reads_rev.txt
+    # Same for reverse reads
+    if samtools view -f 16 ${outprefix}_unique_prop_pair.bam \
+        | grep -E -f ${outprefix}_present_genomes_temp.txt \
+        | cut -f 1 > ${outprefix}_aligned_reads_rev.txt; then
+        : # Do nothing
+    else
+        touch ${outprefix}_aligned_reads_rev.txt
+    fi
 
     # Record statistics (note that each read pair is listed once here, so the line count is multiplied by 2)
     count=$(cat ${outprefix}_aligned_reads_fwd.txt ${outprefix}_aligned_reads_rev.txt | wc -l)

@@ -10,7 +10,7 @@ __default__:
 map2ref:
     queue: "cclake"
     mem : "64GB"
-    nCPU: 16
+    nCPU: 8
     output: "{OUTPUT_DIR}/mapping/{wildcards.sample}/logs/{rule}_{wildcards.ref_db}.log"
 
 get_mapping_overlaps:

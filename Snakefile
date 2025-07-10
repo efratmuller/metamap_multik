@@ -3,7 +3,7 @@
 # To run:
 # cd /rds/project/rds-aFEMMKDjWlo/emuller/phages_project/scripts/metamap_multik
 # conda activate snakemake_v2
-# snakemake --profile slurm_profile --rerun-incomplete --rerun-trigger mtime
+# snakemake --profile slurm_profile --rerun-incomplete --rerun-trigger mtime input
 
 # Dry run:
 # snakemake -n
@@ -72,7 +72,6 @@ rule map2ref:
         cov_exp_ratio_thresh = lambda wildcards: DB_PROPERTIES[wildcards.ref_db]["breadth_obs_exp_ratio"] 
     conda:
         "envs/metamap.yml"
-    threads: 16
     shell:
         """
         tools/map2ref_strobealign.sh -t {params.threads} -i {input.fwd} -n {input.rev} -r {params.ref_db} -o {params.output_prefix} -c {params.reftype} -b {params.cov_thresh} -e {params.cov_exp_ratio_thresh}
