@@ -267,7 +267,7 @@ else
     # Note: grep returns exit code 1 when no matches are found, and when using 
     #  "set -euo pipefail", this causes the entire script to fail. We therefore wrap 
     #  this line in an if/else to catch these cases.
-    if samtools view -F 16 ${outprefix}_unique_prop_pair.bam \
+    if samtools view -f 64 ${outprefix}_unique_prop_pair.bam \
         | grep -E -f ${outprefix}_present_genomes_temp.txt \
         | cut -f 1 > ${outprefix}_aligned_reads_fwd.txt; then
         : # Do nothing
@@ -277,7 +277,7 @@ else
     fi
 
     # Same for reverse reads
-    if samtools view -f 16 ${outprefix}_unique_prop_pair.bam \
+    if samtools view -f 128 ${outprefix}_unique_prop_pair.bam \
         | grep -E -f ${outprefix}_present_genomes_temp.txt \
         | cut -f 1 > ${outprefix}_aligned_reads_rev.txt; then
         : # Do nothing
